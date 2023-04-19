@@ -1,31 +1,97 @@
+// SPDX-License-Identifier: MIT
+
 // Istanbul BTC
 // Istanbul University Faculty of Economics
 // Blockchain Tecnologies and Innovation Center
 
+// Emre Akadal - emreakadal@gmail.com
+
 pragma solidity ^0.8.0;
 
-contract IstanbulBTCCertification {
-	
-	struct Event {
+contract EducationCertification {
 
-		//
+    struct Document {
+        string documentType;
+        string eventName;
+        string documentDate;
+        bytes32 fingerPrint;
+        uint256 timestamp;
+    }
 
-	}
+    mapping(bytes32 => Document[]) private documents;
+    address[] private owners;
 
-	struct Certificate {
+    modifier onlyOwner {
+        require(isOwner(msg.sender), "Only owners can call this function.");
+        _;
+    }
 
-		//
+    constructor() {
+        owners.push(msg.sender);
+    }
 
-	}
+    function isOwner(address _address) public view returns (bool) {
+        for (uint i = 0; i < owners.length; i++) {
+            if (_address == owners[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	Event[] private events;
+    function addOwner(address _address) public onlyOwner {
+        require(!isOwner(_address), "Address is already an owner.");
+        owners.push(_address);
+    }
 
-	Certificate[] private certificates;
+    function removeOwner(address _address) public onlyOwner {
+        require(isOwner(_address), "Address is not an owner.");
+        for (uint i = 0; i < owners.length; i++) {
+            if (_address == owners[i]) {
+                owners[i] = owners[owners.length - 1];
+                owners.pop();
+                return;
+            }
+        }
+    }
 
-	bytes32 public constant ADMIN = keccak256("ADMIN");
-    bytes32 public constant EVENT_CREATOR = keccak256("EVENT_CREATOR");
-    bytes32 public constant MINTER = keccak256("MINTER");
+    function addDocument(
+        string memory _documentType,
+        string memory _eventName,
+        string memory _documentDate,
+        bytes32 _fingerPrint
+    ) public onlyOwner {
+        Document memory newDocument = Document({
+            documentType: _documentType,
+            eventName: _eventName,
+            documentDate: _documentDate,
+            fingerPrint: _fingerPrint,
+            timestamp: block.timestamp
+        });
 
+        documents[_fingerPrint].push(newDocument);
+    }
 
+    function verifyDocument(
+        string memory _firstName,
+        string memory _lastName,
+        string memory _validationNumber
+    ) public view returns (Document[] memory) {
+        bytes32 fingerPrint = keccak256(abi.encodePacked(string(abi.encodePacked(_firstName, _lastName, _validationNumber))));
+        Document[] memory personDocuments = documents[fingerPrint];
+
+        require(personDocuments.length > 0, "No documents found!");
+
+        return personDocuments;
+    }
+
+    function calculateFingerPrint(
+        string memory _firstName,
+        string memory _lastName,
+        string memory _validationNumber
+    ) public pure returns (bytes32) {
+        bytes32 fingerPrint = keccak256(abi.encodePacked(_firstName, _lastName, _validationNumber));
+        return fingerPrint;
+    }
 
 }
